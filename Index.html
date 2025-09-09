@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mobile Shopping App</title>
+  <style>
+    /* Basic reset */
+    *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,verdana,sans-serif}
+    html,body{height:100%}
+   
+    /* Top navigation (fixed) */
+    .topbar{
+      position:fixed;top:0;left:0;right:0;height:56px;background:#fff;border-bottom:1px solid #e6e6e6;display:flex;align-items:center;gap:12px;padding:8px 12px;z-index:30
+    }
+    .loc-btn,.profile-btn{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid #ddd}
+    .search{flex:0 1 200px;height:36px;border-radius:8px;border:1px solid #ddd;display:flex;align-items:center;padding:0 10px}
+    .search input{flex:1;border:0;outline:none;font-size:15px}
+    /* Left vertical category rail */
+    .left-rail{
+      position:fixed;left:8px;top:72px;bottom:72px;width:72px;display:flex;flex-direction:column;align-items:center;gap:10px;z-index:20;overflow:auto;padding:8px
+    }
+    .left-rail::-webkit-scrollbar { display: none; } /* Hide scrollbar for Chrome, Safari and Opera */
+    .left-rail { -ms-overflow-style: none; scrollbar-width: none; } /* Hide scrollbar for IE, Edge and Firefox */
+    .cat{
+      width:60px;height:60px;border-radius:12px;background:#fafafa;border:1px solid #ddd;display:flex;
+      flex-direction:column;align-items:center;justify-content:center;font-size:12px;padding:5px;
+      transition: all 0.2s ease;
+    }
+    .cat.active{background:#1a73e8;color:white;border-color:#1a73e8}
+    .cat-img{width:24px;height:24px;object-fit:contain;margin-bottom:4px}
+    .cat-title{font-size:10px;text-align:center;line-height:1.1}
+    /* Main content */
+    .main{
+      padding:80px 16px 84px 96px; /* top right bottom left (leave room for left rail) */
+      background:#f7f7f8;min-height:100vh;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr); /* 3 products per row by default */
+      gap: 16px; /* Space between cards */
+    }
+    .product-card{
+      background:#fff;border-radius:12px;padding:0 2px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;
+      width: 100%; /* Ensure card fits within grid */
+    }
+    .product-img{
+      width:100%;height:150px;border-top-left-radius:12px;border-top-right-radius:12px;display:flex;align-items:center;
+      justify-content:center;overflow:hidden;flex-shrink:0;margin:0;
+    }
+    .product-img img{width:100%;height:100%;object-fit:cover}
+    .product-info{
+      padding:12px;display:flex;flex-direction:column;gap:6px;
+    }
+    .product-name{font-weight:600;font-size:15px;line-height:1.3}
+    .product-price{color:#1a73e8;font-weight:700;font-size:16px;display:flex;align-items:center;gap:5px}
+    .product-price del{color:#999;font-weight:400}
+    .product-desc{font-size:13px;color:#666;line-height:1.4;margin-bottom:10px}
+    .actions{display:flex;justify-content:space-between;align-items:center}
+    .add-btn{
+      background:#1a73e8;color:#fff;padding:8px 14px;border-radius:8px;border:0;
+      font-weight:600;cursor:pointer;transition:all 0.2s ease
+    }
+    .add-btn:hover{background:#0d62cb}
+    /* Bottom nav (fixed) */
+    .bottombar{
+      position:fixed;left:0;right:0;bottom:0;height:64px;background:#fff;border-top:1px solid #e6e6e6;
+      display:flex;justify-content:space-around;align-items:center;z-index:40
+    }
+    .bottombar button{
+      background:transparent;border:0;display:flex;flex-direction:column;align-items:center;
+      gap:4px;font-size:12px;padding:8px 12px;border-radius:8px;transition:all 0.2s ease
+    }
+    .bottombar button.active{background:#f0f6ff}
+    /* Simple cart badge */
+    .badge{background:#ff3b30;color:#fff;border-radius:999px;padding:2px 6px;font-size:12px}
+    /* Responsive tweaks */
+    @media(max-width:1024px){
+      .main {
+        grid-template-columns: repeat(2, 1fr); /* 2 products per row on medium screens */
+      }
+    }
+    @media(max-width:768px){
+      .main {
+        grid-template-columns: 1fr; /* 1 product per row on small screens */
+        padding-left: 84px; /* Adjust for smaller screens */
+      }
+      .product-img{height:160px}
+      .left-rail{width:64px;left:6px}
+      .cat{width:52px;height:52px}
+      .cat-img{width:20px;height:20px}
+    }
+    /* Empty state */
+    .empty-state{text-align:center;padding:40px 20px;color:#666}
+    .empty-state img{width:120px;margin-bottom:16px;opacity:0.5}
+  </style>
+</head>
+<body>
+  <!-- Top navigation -->
+  <div class="topbar">
+    <button class="loc-btn" id="locBtn" title="Location">📍</button>
+    <div class="search">
+      <input id="searchInput" placeholder="Search products, schools, items... (type to filter)" />
+      <button id="searchClear" title="Clear" style="border:0;background:transparent">✖</button>
+    </div>
+    <button class="profile-btn" id="profileBtn" title="Profile">👤</button>
+  </div>
+  <!-- Left vertical categories -->
+  <div class="left-rail" id="leftRail">
+    <!-- Categories will be injected here -->
+  </div>
+  <!-- Main product area -->
+  <main class="main" id="productList">
+    <!-- Product cards injected with JS -->
+  </main>
+  <!-- Bottom navigation -->
+  <nav class="bottombar">
+    <button id="navHome" class="active">🏠<span>Home</span></button>
+    <button id="navProducts">🛍️<span>Products</span></button>
+    <button id="navCart">🛒<span>Cart <span id="cartCount" class="badge">0</span></span></button>
+    <button id="navOrders">📦<span>Order</span></button>
+  </nav>
+  <script>
+  // Sample data with images and descriptions
+  const categories = [
+    {name: 'All', icon: '🛍️'},
+    {name: 'School', icon: '🎒'},
+    {name: 'Stationery', icon: '✏️'},
+    {name: 'Books', icon: '📚'},
+    {name: 'Electronics', icon: '💻'},
+    {name: 'Grocery', icon: '🛒'},
+    {name: 'Clothes', icon: '👕'},
+    {name: 'Toys', icon: '🧸'},
+    {name: 'More', icon: '⋯'}
+  ];
+  const products = [
+    {id:1, name:'School Bag', price:499, cat:'School', image:'https://placehold.co/100x100/4A90E2/FFFFFF?text=Bag', desc: 'Durable school bag with multiple compartments for books and accessories.'},
+    {id:2, name:'Notebook Set', price:199, cat:'Stationery', image:'https://placehold.co/100x100/50C878/FFFFFF?text=Notes', desc: 'Pack of 5 ruled notebooks, perfect for school and office use.'},
+    {id:3, name:'Science Book', price:299, cat:'Books', image:'https://placehold.co/100x100/FF6B6B/FFFFFF?text=Science', desc: 'Comprehensive science textbook for class 10 students.'},
+    {id:4, name:'Wireless Mouse', price:599, cat:'Electronics', image:'https://placehold.co/100x100/333333/FFFFFF?text=Mouse', desc: 'Ergonomic wireless mouse with long battery life.'},
+    {id:5, name:'Rice 5kg', price:299, cat:'Grocery', image:'https://placehold.co/100x100/F7DC6F/333333?text=Rice', desc: 'Premium quality basmati rice, 5kg pack.'},
+    {id:6, name:'T-Shirt', price:399, cat:'Clothes', image:'https://placehold.co/100x100/9B59B6/FFFFFF?text=T-Shirt', desc: 'Comfortable cotton t-shirt in various sizes.'},
+    {id:7, name:'Teddy Bear', price:599, cat:'Toys', image:'https://placehold.co/100x100/E67E22/FFFFFF?text=Teddy', desc: 'Soft and cuddly teddy bear for kids.'},
+    {id:8, name:'Geometry Box', price:149, cat:'Stationery', image:'https://placehold.co/100x100/3498DB/FFFFFF?text=Geometry', desc: 'Complete geometry set with compass, ruler, and more.'},
+    {id:9, name:'Pencil Set', price:99, cat:'Stationery', image:'https://placehold.co/100x100/2ECC71/FFFFFF?text=Pencils', desc: 'Set of 10 HB pencils with erasers.'},
+    {id:10, name:'Mobile Cover', price:249, cat:'Electronics', image:'https://placehold.co/100x100/34495E/FFFFFF?text=Cover', desc: 'Protective mobile cover for popular smartphone models.'},
+    {id:11, name:'Story Book', price:179, cat:'Books', image:'https://placehold.co/100x100/E74C3C/FFFFFF?text=Story', desc: 'Collection of short stories for children.'},
+    {id:12, name:'Water Bottle', price:199, cat:'School', image:'https://placehold.co/100x100/1ABC9C/FFFFFF?text=Bottle', desc: 'Insulated water bottle, keeps drinks cold for hours.'},
+    {id:13, name:'Backpack', price:699, cat:'School', image:'https://placehold.co/100x100/4A90E2/FFFFFF?text=Backpack', desc: 'Spacious backpack for school and travel.'},
+    {id:14, name:'Eraser Pack', price:49, cat:'Stationery', image:'https://placehold.co/100x100/50C878/FFFFFF?text=Erasers', desc: 'Pack of 10 white erasers for pencils.'},
+    {id:15, name:'Math Book', price:249, cat:'Books', image:'https://placehold.co/100x100/FF6B6B/FFFFFF?text=Math', desc: 'Mathematics textbook for class 8.'},
+    {id:16, name:'Earphones', price:399, cat:'Electronics', image:'https://placehold.co/100x100/333333/FFFFFF?text=Earphones', desc: 'Wired earphones with mic for calls.'},
+    {id:17, name:'Flour 5kg', price:199, cat:'Grocery', image:'https://placehold.co/100x100/F7DC6F/333333?text=Flour', desc: 'Whole wheat flour, 5kg pack.'},
+    {id:18, name:'Jeans', price:799, cat:'Clothes', image:'https://placehold.co/100x100/9B59B6/FFFFFF?text=Jeans', desc: 'Slim fit jeans for men.'},
+    {id:19, name:'Puzzle Game', price:299, cat:'Toys', image:'https://placehold.co/100x100/E67E22/FFFFFF?text=Puzzle', desc: '100-piece jigsaw puzzle for kids.'},
+    {id:20, name:'Ruler Set', price:79, cat:'Stationery', image:'https://placehold.co/100x100/3498DB/FFFFFF?text=Ruler', desc: 'Set of plastic rulers in different sizes.'},
+    {id:21, name:'Highlighter Pack', price:129, cat:'Stationery', image:'https://placehold.co/100x100/2ECC71/FFFFFF?text=Highlighters', desc: 'Pack of 5 colorful highlighters.'},
+    {id:22, name:'Charger Cable', price:149, cat:'Electronics', image:'https://placehold.co/100x100/34495E/FFFFFF?text=Cable', desc: 'USB charging cable, 1m length.'},
+    {id:23, name:'History Book', price:329, cat:'Books', image:'https://placehold.co/100x100/E74C3C/FFFFFF?text=History', desc: 'History textbook for class 9.'},
+    {id:24, name:'Lunch Box', price:249, cat:'School', image:'https://placehold.co/100x100/1ABC9C/FFFFFF?text=LunchBox', desc: 'Insulated lunch box with compartments.'},
+    {id:25, name:'Shoes', price:999, cat:'Clothes', image:'https://placehold.co/100x100/9B59B6/FFFFFF?text=Shoes', desc: 'Sports shoes for running.'},
+    {id:26, name:'Building Blocks', price:499, cat:'Toys', image:'https://placehold.co/100x100/E67E22/FFFFFF?text=Blocks', desc: 'Set of 100 building blocks for creative play.'},
+    {id:27, name:'Sugar 1kg', price:59, cat:'Grocery', image:'https://placehold.co/100x100/F7DC6F/333333?text=Sugar', desc: 'Refined white sugar, 1kg pack.'},
+    {id:28, name:'Keyboard', price:799, cat:'Electronics', image:'https://placehold.co/100x100/333333/FFFFFF?text=Keyboard', desc: 'Wireless keyboard for computers.'},
+    {id:29, name:'English Book', price:279, cat:'Books', image:'https://placehold.co/100x100/FF6B6B/FFFFFF?text=English', desc: 'English literature book for class 7.'},
+    {id:30, name:'Pen Set', price:89, cat:'Stationery', image:'https://placehold.co/100x100/50C878/FFFFFF?text=Pens', desc: 'Set of 10 blue ballpoint pens.'},
+    {id:31, name:'Pencil Case', price:149, cat:'School', image:'https://placehold.co/100x100/4A90E2/FFFFFF?text=Case', desc: 'Zipper pencil case for stationery.'},
+    {id:32, name:'Doll', price:399, cat:'Toys', image:'https://placehold.co/100x100/E67E22/FFFFFF?text=Doll', desc: 'Fashion doll with accessories.'},
+    {id:33, name:'Socks Pack', price:199, cat:'Clothes', image:'https://placehold.co/100x100/9B59B6/FFFFFF?text=Socks', desc: 'Pack of 5 cotton socks.'},
+    {id:34, name:'Oil 1L', price:129, cat:'Grocery', image:'https://placehold.co/100x100/F7DC6F/333333?text=Oil', desc: 'Sunflower oil, 1 liter bottle.'},
+    {id:35, name:'Headphones', price:699, cat:'Electronics', image:'https://placehold.co/100x100/333333/FFFFFF?text=Headphones', desc: 'Over-ear headphones with noise cancellation.'},
+    {id:36, name:'Geography Book', price:349, cat:'Books', image:'https://placehold.co/100x100/FF6B6B/FFFFFF?text=Geography', desc: 'Geography textbook for class 11.'},
+    {id:37, name:'Stapler', price:99, cat:'Stationery', image:'https://placehold.co/100x100/50C878/FFFFFF?text=Stapler', desc: 'Mini stapler with staples.'},
+    {id:38, name:'Glue Stick', price:39, cat:'Stationery', image:'https://placehold.co/100x100/3498DB/FFFFFF?text=Glue', desc: 'Washable glue stick for crafts.'},
+    {id:39, name:'Power Bank', price:899, cat:'Electronics', image:'https://placehold.co/100x100/34495E/FFFFFF?text=PowerBank', desc: '10000mAh power bank for mobile charging.'},
+    {id:40, name:'Fairy Tales Book', price:199, cat:'Books', image:'https://placehold.co/100x100/E74C3C/FFFFFF?text=Fairy', desc: 'Collection of classic fairy tales.'},
+    {id:41, name:'School Uniform', price:599, cat:'School', image:'https://placehold.co/100x100/1ABC9C/FFFFFF?text=Uniform', desc: 'Standard school uniform set.'},
+    {id:42, name:'Toy Car', price:249, cat:'Toys', image:'https://placehold.co/100x100/E67E22/FFFFFF?text=Car', desc: 'Remote control toy car.'},
+    {id:43, name:'Laptop Stand', price:449, originalPrice:599, cat:'Electronics', image:'https://placehold.co/100x100/333333/FFFFFF?text=Stand', desc: 'Adjustable laptop stand for better ergonomics.'},
+    {id:44, name:'Coffee Mug', price:149, originalPrice:199, cat:'Grocery', image:'https://placehold.co/100x100/F7DC6F/333333?text=Mug', desc: 'Ceramic coffee mug with fun design.'},
+    {id:45, name:'Hoodie', price:699, originalPrice:899, cat:'Clothes', image:'https://placehold.co/100x100/9B59B6/FFFFFF?text=Hoodie', desc: 'Warm hoodie for casual wear.'},
+    {id:46, name:'Board Game', price:399, originalPrice:499, cat:'Toys', image:'https://placehold.co/100x100/E67E22/FFFFFF?text=Board', desc: 'Family board game for entertainment.'},
+    {id:47, name:'Marker Set', price:199, originalPrice:249, cat:'Stationery', image:'https://placehold.co/100x100/50C878/FFFFFF?text=Markers', desc: 'Set of 12 colorful markers.'},
+    {id:48, name:'Novel Book', price:229, originalPrice:299, cat:'Books', image:'https://placehold.co/100x100/FF6B6B/FFFFFF?text=Novel', desc: 'Bestselling novel for leisure reading.'},
+    {id:49, name:'School Shoes', price:499, originalPrice:699, cat:'School', image:'https://placehold.co/100x100/4A90E2/FFFFFF?text=Shoes', desc: 'Comfortable school shoes for daily use.'},
+    {id:50, name:'Tea Pack', price:99, originalPrice:129, cat:'Grocery', image:'https://placehold.co/100x100/F7DC6F/333333?text=Tea', desc: 'Pack of premium tea leaves.'},
+    {id:51, name:'Scarf', price:199, originalPrice:299, cat:'Clothes', image:'https://placehold.co/100x100/9B59B6/FFFFFF?text=Scarf', desc: 'Warm woolen scarf for winter.'},
+    {id:52, name:'Action Figure', price:299, originalPrice:399, cat:'Toys', image:'https://placehold.co/100x100/E67E22/FFFFFF?text=Figure', desc: 'Collectible action figure toy.'}
+  ];
+  // Current state
+  let currentCategory = 'All';
+  let currentTab = 'home';
+  let currentProducts = [];
+  // Render left categories
+  const leftRail = document.getElementById('leftRail');
+  categories.forEach(cat => {
+    const d = document.createElement('div');
+    d.className = 'cat' + (cat.name === 'All' ? ' active' : '');
+    d.innerHTML = `
+      <div class="cat-img">${cat.icon}</div>
+      <div class="cat-title">${cat.name}</div>
+    `;
+    d.title = cat.name;
+    d.addEventListener('click', () => {
+      // Remove active class from all categories
+      document.querySelectorAll('.cat').forEach(el => el.classList.remove('active'));
+      // Add active class to clicked category
+      d.classList.add('active');
+      filterByCategory(cat.name);
+    });
+    leftRail.appendChild(d);
+  });
+  // Render products
+  const productList = document.getElementById('productList');
+  const mainEl = document.querySelector('.main');
+  function render(list) {
+    productList.innerHTML = '';
+    if(list.length === 0) {
+      productList.innerHTML = `
+        <div class="empty-state">
+          <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='120' height='120'><path fill='%23666' d='M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/></svg>" alt="No products">
+          <h3>No products found</h3>
+          <p>Try a different search or category</p>
+        </div>
+      `;
+      return;
+    }
+   
+    list.forEach(p => {
+      const card = document.createElement('article');
+      card.className = 'product-card';
+      let priceHtml = `₹ ${p.price}`;
+      if (p.originalPrice) {
+        priceHtml = `<del>₹ ${p.originalPrice}</del> ₹ ${p.price}`;
+      }
+      card.innerHTML = `
+        <div class="product-img">
+          <img src="${p.image}" alt="${p.name}">
+        </div>
+        <div class="product-info">
+          <div class="product-name">${p.name}</div>
+          <div class="product-desc">${p.desc}</div>
+          <div class="actions">
+            <div class="product-price">${priceHtml}</div>
+            <button class="add-btn" data-id="${p.id}">Add to cart</button>
+          </div>
+        </div>
+      `;
+      productList.appendChild(card);
+    });
+   
+    // attach add listeners
+    document.querySelectorAll('.add-btn').forEach(b =>
+      b.addEventListener('click', e => {addToCart(e.target.dataset.id)})
+    );
+  }
+  // Filtering by category (for products tab)
+  function filterByCategory(cat) {
+    currentCategory = cat;
+    if(cat === 'All') {
+      currentProducts = [...products];
+    } else {
+      currentProducts = products.filter(p => p.cat === cat);
+    }
+   
+    // Apply search filter if there's a search query
+    const searchQuery = searchInput.value.trim().toLowerCase();
+    if(searchQuery) {
+      currentProducts = currentProducts.filter(p =>
+        p.name.toLowerCase().includes(searchQuery) || p.cat.toLowerCase().includes(searchQuery)
+      );
+    }
+   
+    render(currentProducts);
+  }
+  // Set current tab
+  function setTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.bottombar button').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`nav${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
+   
+    if (tab === 'home') {
+      leftRail.style.display = 'none';
+      mainEl.style.paddingLeft = '16px';
+      const q = searchInput.value.trim().toLowerCase();
+      currentProducts = q ? products.filter(p => p.originalPrice && (p.name.toLowerCase().includes(q) || p.cat.toLowerCase().includes(q))) : products.filter(p => p.originalPrice);
+      render(currentProducts);
+    } else if (tab === 'products') {
+      leftRail.style.display = 'flex';
+      mainEl.style.paddingLeft = '96px';
+      filterByCategory(currentCategory);
+    }
+  }
+  // Search
+  
+
+// Search
+  const searchInput = document.getElementById('searchInput');
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.trim().toLowerCase();
+   
+    if (currentTab === 'home') {
+      currentProducts = q ? products.filter(p => p.originalPrice && (p.name.toLowerCase().includes(q) || p.cat.toLowerCase().includes(q))) : products.filter(p => p.originalPrice);
+      render(currentProducts);
+    } else if (currentTab === 'products') {
+      if(currentCategory === 'All') {
+        currentProducts = q ? products.filter(p =>
+          p.name.toLowerCase().includes(q) || p.cat.toLowerCase().includes(q)
+        ) : [...products];
+      } else {
+        currentProducts = products.filter(p => p.cat === currentCategory);
+        if(q) {
+          currentProducts = currentProducts.filter(p =>
+            p.name.toLowerCase().includes(q) || p.cat.toLowerCase().includes(q)
+          );
+        }
+      }
+      render(currentProducts);
+    }
+  });
+ 
+  document.getElementById('searchClear').addEventListener('click', () => {
+    searchInput.value = '';
+    if (currentTab === 'home') {
+      currentProducts = products.filter(p => p.originalPrice);
+      render(currentProducts);
+    } else if (currentTab === 'products') {
+      filterByCategory(currentCategory);
+    }
+  });
+  // Simple cart
+  const cartCount = document.getElementById('cartCount');
+  let cart = JSON.parse(localStorage.getItem('demo_cart') || '[]');
+ 
+  function updateCartUI() {
+    cartCount.innerText = cart.length;
+    localStorage.setItem('demo_cart', JSON.stringify(cart));
+  }
+ 
+  function addToCart(id) {
+    const p = products.find(x => x.id == id);
+    cart.push(p);
+    updateCartUI();
+   
+    // Show a subtle notification instead of alert
+    const notification = document.createElement('div');
+    notification.textContent = `${p.name} added to cart`;
+    notification.style = `
+      position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+      background: #4CAF50; color: white; padding: 12px 20px; border-radius: 8px;
+      z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: fadeInOut 2s forwards;
+    `;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 2000);
+  }
+ 
+  updateCartUI();
+  // Add CSS for notification animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes fadeInOut {
+      0% { opacity: 0; top: 50px; }
+      10% { opacity: 1; top: 70px; }
+      90% { opacity: 1; top: 70px; }
+      100% { opacity: 0; top: 90px; visibility: hidden; }
+    }
+  `;
+  document.head.appendChild(style);
+  // Initial render
+  setTab('home');
+  // Nav button handlers (simple demos)
+  document.getElementById('navHome').addEventListener('click', () => setTab('home'));
+  document.getElementById('navProducts').addEventListener('click', () => setTab('products'));
+  document.getElementById('navCart').addEventListener('click', () => {
+    document.querySelectorAll('.bottombar button').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('navCart').classList.add('active');
+    const list = cart.map(c => `${c.name} - ₹${c.price}`).join('\n');
+    alert(list.length ? ('Cart:\n' + list) : 'Cart is empty');
+  });
+ 
+  document.getElementById('navOrders').addEventListener('click', () => {
+    document.querySelectorAll('.bottombar button').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('navOrders').classList.add('active');
+    alert('Order screen (demo)');
+  });
+  // Location/profile demo
+  document.getElementById('locBtn').addEventListener('click', () => {
+    const loc = prompt('Enter your location (city)');
+    if(loc) alert('Location set to: ' + loc);
+  });
+ 
+  document.getElementById('profileBtn').addEventListener('click', () => {
+    const name = prompt('Enter your name to simulate login');
+    if(name) alert('Hello, ' + name + ' (simulated)');
+  });
+  </script>
+</body>
+</html>
